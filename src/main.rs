@@ -1,6 +1,8 @@
 #![no_std]
 #![no_main]
 
+extern crate bootloader_precompiled;
+
 use core::panic::PanicInfo;
 
 #[panic_handler]
@@ -8,20 +10,18 @@ fn panic(_info: &PanicInfo) -> ! {
     loop {}
 }
 
-// Linux:
+static HELLO: &[u8] = b"Hello World!";
+
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    loop {}
-}
+    let vga_buffer = 0xb8000 as *mut u8;
 
-// Windows:
-#[no_mangle]
-pub extern "C" fn mainCRTStartup() -> ! {
-    main();
-}
+    for (i, &byte) in HELLO.iter().enumerate() {
+        unsafe {
+            *vga_buffer.offset(i as isize * 2) = byte;
+            *vga_buffer.offset(i as isize * 2 + 1) = 0xb;
+        }
+    }
 
-// MacOS / Windows:
-#[no_mangle]
-pub extern "C" fn main() -> ! {
     loop {}
 }
