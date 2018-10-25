@@ -22,7 +22,10 @@ fn panic(info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     println!("Num {} and {}", 13, 3.14);
     println!(".............................................");
-    panic!("Some panic message");
+    for i in 1..24 {
+        println!("Row #{}", i);
+    }
+    panic!("PANIC!");
 
     loop {}
 }
