@@ -25,7 +25,11 @@ pub extern "C" fn _start() -> ! {
     for i in 1..24 {
         println!("Row #{}", i);
     }
-    panic!("PANIC!");
+//    panic!("PANIC!");
+    print!(".............................................");
+    println!("\rAPA");
+    print!("apa");
+    print!("\x08elsin");
 
     loop {}
 }
