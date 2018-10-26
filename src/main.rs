@@ -1,5 +1,11 @@
 #![no_std]
-#![no_main]
+#![cfg_attr(not(test), no_main)]
+#![cfg_attr(test, allow(dead_code, unused_macros, unused_imports))]
+
+#[cfg(test)]
+extern crate std;
+#[cfg(test)]
+extern crate array_init;
 
 extern crate bootloader_precompiled;
 extern crate volatile;
@@ -12,12 +18,14 @@ use core::panic::PanicInfo;
 #[macro_use]
 mod vga_buffer;
 
+#[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
     loop {}
 }
 
+#[cfg(not(test))]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
     println!("Num {} and {}", 13, 3.14);
