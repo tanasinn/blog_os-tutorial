@@ -92,7 +92,7 @@ impl Writer {
         match byte {
             b'\n' => self.new_line(),
             b'\r' => self.column_position = 0,
-            8 => {
+            8 => {  // backspace
                 if self.column_position > 0 {
                     self.column_position -= 1
                 }
@@ -152,13 +152,13 @@ impl fmt::Write for Writer {
 mod test {
     use super::*;
 
-    fn construct_writer() -> Writer {
+    fn construct_writer(row: usize, col: usize) -> Writer {
         use super::super::std::boxed::Box;  // Why super::super:: ? Should work without.
 
         let buffer = construct_buffer();
         Writer {
-            column_position: 0,
-            row_position   : BUFFER_HEIGHT - 1,
+            column_position: col,
+            row_position   : row,
             color_code     : ColorCode::new(Color::Blue, Color::Magenta),
             buffer         : Box::leak(Box::new(buffer)),
         }
@@ -174,7 +174,7 @@ mod test {
 
     fn empty_char() -> ScreenChar {
         ScreenChar {
-            ascii_character: b'w',
+            ascii_character: b' ',
             color_code     : ColorCode::new(Color::Green, Color::Brown),
         }
     }
@@ -183,7 +183,7 @@ mod test {
     fn write_formatted() {
         use core::fmt::Write;
 
-        let mut writer = construct_writer();
+        let mut writer = construct_writer(BUFFER_HEIGHT - 1, 0);
         writeln!(&mut writer, "a").unwrap();
         writeln!(&mut writer, "b{}", "c").unwrap();
 
@@ -203,7 +203,94 @@ mod test {
                     assert_eq!(screen_char.ascii_character, b' ');
                     assert_eq!(screen_char.color_code, writer.color_code);
                 } else {
-                    assert_eq!(screen_char, empty_char(), "pos {},{}", i, j);
+                    assert_eq!(screen_char, empty_char());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn write_extra_chars() {
+        use core::fmt::Write;
+
+        let mut writer = construct_writer(0, 0);
+        write!(&mut writer, "\x08\x08\x08\x08\x08").unwrap();
+        write!(&mut writer, "foo").unwrap();
+        write!(&mut writer, "\rbar").unwrap();
+        write!(&mut writer, "\x08z").unwrap();
+
+        for (i, row) in writer.buffer.chars.iter().enumerate() {
+            for (j, screen_char) in row.iter().enumerate() {
+                let screen_char = screen_char.read();
+                if i == 0 && j == 0 {
+                    assert_eq!(screen_char.ascii_character, b'b');
+                    assert_eq!(screen_char.color_code, writer.color_code);
+                } else if i == 0 && j == 1 {
+                    assert_eq!(screen_char.ascii_character, b'a');
+                    assert_eq!(screen_char.color_code, writer.color_code);
+                } else if i == 0 && j == 2 {
+                    assert_eq!(screen_char.ascii_character, b'z');
+                    assert_eq!(screen_char.color_code, writer.color_code);
+                } else {
+                    assert_eq!(screen_char, empty_char());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn write_unsupported_chars() {
+        use core::fmt::Write;
+
+        let mut writer = construct_writer(0, 0);
+        writeln!(&mut writer, "漢字").unwrap();
+
+        for (i, row) in writer.buffer.chars.iter().enumerate() {
+            for (j, screen_char) in row.iter().enumerate() {
+                let screen_char = screen_char.read();
+                if i == 0 && j < 6 {
+                    assert_eq!(screen_char.ascii_character, 0xfe);
+                    assert_eq!(screen_char.color_code, writer.color_code);
+                } else {
+                    assert_eq!(screen_char, empty_char());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn line_feed() {
+        use core::fmt::Write;
+
+        let mut writer = construct_writer(0, BUFFER_WIDTH - 1);
+        writeln!(&mut writer, "01").unwrap();
+
+        for (i, row) in writer.buffer.chars.iter().enumerate() {
+            for (j, screen_char) in row.iter().enumerate() {
+                let screen_char = screen_char.read();
+                if i == 0 && j == BUFFER_WIDTH - 1 {
+                    assert_eq!(screen_char.ascii_character, b'0');
+                    assert_eq!(screen_char.color_code, writer.color_code);
+                } else if i == 1 && j == 0 {
+                    assert_eq!(screen_char.ascii_character, b'1');
+                    assert_eq!(screen_char.color_code, writer.color_code);
+                } else {
+                    assert_eq!(screen_char, empty_char());
+                }
+            }
+        }
+
+        for row in 0..BUFFER_HEIGHT - 1 {
+            writeln!(&mut writer, "{}", row % 10).unwrap();
+        }
+
+        for (i, row) in writer.buffer.chars.iter().enumerate() {
+            for (j, screen_char) in row.iter().enumerate() {
+                let screen_char = screen_char.read();
+                if i < BUFFER_HEIGHT - 1 && j == 0 {
+                    assert_eq!(screen_char.ascii_character, b'0' + (i as u8 % 10));
+                } else {
+                    assert_eq!(screen_char.ascii_character, b' ');
                 }
             }
         }
