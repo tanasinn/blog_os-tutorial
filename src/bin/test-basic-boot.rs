@@ -6,18 +6,27 @@
 extern crate blog_os;
 
 use core::panic::PanicInfo;
+use blog_os::exit_qemu;
 
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
+    serial_println!("failed");
+    serial_println!("{}", info);
+    unsafe {
+        exit_qemu();
+    }
+
     loop {}
 }
 
 #[cfg(not(test))]
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-    println!("Hello world!");
+    serial_println!("ok");
+    unsafe {
+        exit_qemu();
+    }
 
     loop {}
 }
