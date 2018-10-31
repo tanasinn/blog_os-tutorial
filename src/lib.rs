@@ -1,4 +1,5 @@
 #![no_std]
+#![feature(abi_x86_interrupt)]
 
 extern crate bootloader_precompiled;
 #[macro_use]
@@ -8,14 +9,15 @@ extern crate uart_16550;
 extern crate volatile;
 extern crate x86_64;
 
-
 #[cfg(test)]
 extern crate std;
 #[cfg(test)]
 extern crate array_init;
 
-pub mod serial;
+#[macro_use]
 pub mod vga_buffer;
+pub mod interrupts;
+pub mod serial;
 
 pub unsafe fn exit_qemu() {
     use x86_64::instructions::port::Port;

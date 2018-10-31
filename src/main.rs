@@ -19,5 +19,11 @@ fn panic(info: &PanicInfo) -> ! {
 pub extern "C" fn _start() -> ! {
     println!("Hello world!");
 
+    blog_os::interrupts::init_idt();
+
+    x86_64::instructions::int3();
+
+    println!("It did not crash!");
+
     loop {}
 }
