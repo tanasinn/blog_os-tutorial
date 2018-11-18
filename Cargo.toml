@@ -2,7 +2,7 @@
 name = "blog_os"
 version = "0.1.0"
 authors = ["ker <ker@qlik.com>"]
-edition = "2018"
+#edition = "2018"
 
 [features]
 integration-test = []
