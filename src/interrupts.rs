@@ -24,10 +24,10 @@ pub fn init_idt() {
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFrame) {
-    println!("EXCEPTION: BREAKPOINT\n{:#?}", stack_frame);
+    println!("\x1B[41;97mEXCEPTION: BREAKPOINT\n{:#?}\x1B[0m", stack_frame);
 }
 
 extern "x86-interrupt" fn double_fault_handler(stack_frame: &mut ExceptionStackFrame, _error_code: u64) {
-    println!("EXCEPTION: DOUBLE FAULT\n{:#?}", stack_frame);
+    println!("\x1B[41;93mEXCEPTION: DOUBLE FAULT\n{:#?}\x1B[0m", stack_frame);
     loop {}
 }

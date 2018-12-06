@@ -10,19 +10,28 @@ use core::panic::PanicInfo;
 #[cfg(not(test))]
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-    println!("{}", info);
+    println!("\x1B[41;97m{}\x1B[0m", info);
     loop {}
 }
 
 #[cfg(not(test))]
 #[no_mangle]
+#[allow(unconditional_recursion)]
 pub extern "C" fn _start() -> ! {
-    println!("Hello world!");
-
     blog_os::gdt::init();
     blog_os::interrupts::init_idt();
 
-//    x86_64::instructions::int3();
+    for row in 0..16 {
+        let bg_offset = if row < 8 { 40 } else { 100 - 8 };
+        for col in 0..16 {
+            let fg_offset = if col < 8 { 30 } else { 90 - 8 };
+            print!("\x1B[{};{}m{:X}", bg_offset + row, fg_offset + col, col);
+        }
+        println!("\x1B[0m")
+    }
+    println!();
+
+    x86_64::instructions::int3();
 
     fn stack_overflow() {
         stack_overflow(); // for each recursion, the return address is pushed
@@ -30,9 +39,6 @@ pub extern "C" fn _start() -> ! {
 
     // trigger a stack overflow
     stack_overflow();
-
-
-    println!("It did not crash!");
 
     loop {}
 }
