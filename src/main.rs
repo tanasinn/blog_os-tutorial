@@ -11,15 +11,23 @@ use core::panic::PanicInfo;
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("\x1B[41;97m{}\x1B[0m", info);
-    loop {}
+    blog_os::hlt_loop();
 }
 
 #[cfg(not(test))]
 #[no_mangle]
 #[allow(unconditional_recursion)]
 pub extern "C" fn _start() -> ! {
+    use blog_os::interrupts::PICS;
+
     blog_os::gdt::init();
     blog_os::interrupts::init_idt();
+
+    unsafe {
+        PICS.lock().initialize();
+    };
+    x86_64::instructions::interrupts::enable();
+
 
     for row in 0..16 {
         let bg_offset = if row < 8 { 40 } else { 100 - 8 };
@@ -30,15 +38,18 @@ pub extern "C" fn _start() -> ! {
         println!("\x1B[0m")
     }
     println!();
+    print!("> ");
 
-    x86_64::instructions::int3();
+//    x86_64::instructions::int3();
+//
+//    fn stack_overflow() {
+//        stack_overflow(); // for each recursion, the return address is pushed
+//    }
+//
+//    // trigger a stack overflow
+//    stack_overflow();
 
-    fn stack_overflow() {
-        stack_overflow(); // for each recursion, the return address is pushed
-    }
+//    println!("It did not crash!");
 
-    // trigger a stack overflow
-    stack_overflow();
-
-    loop {}
+    blog_os::hlt_loop();
 }

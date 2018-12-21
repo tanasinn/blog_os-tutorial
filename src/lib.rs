@@ -4,6 +4,8 @@
 extern crate bootloader_precompiled;
 #[macro_use]
 extern crate lazy_static;
+extern crate pc_keyboard;
+extern crate pic8259_simple;
 extern crate spin;
 extern crate uart_16550;
 extern crate volatile;
@@ -27,3 +29,8 @@ pub unsafe fn exit_qemu() {
     port.write(0);
 }
 
+pub fn hlt_loop() -> ! {
+    loop {
+        x86_64::instructions::hlt();
+    }
+}
