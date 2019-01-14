@@ -2,19 +2,19 @@
 name = "blog_os"
 version = "0.1.0"
 authors = ["ker <ker@qlik.com>"]
-#edition = "2018"
+edition = "2018"
 
 [features]
 integration-test = []
 
 [dependencies]
-bootloader_precompiled = "0.2.0"
+bootloader = "0.3.12"
 pc-keyboard = "0.3.1"
 pic8259_simple = "0.1.1"
 spin = "0.4.9"
 uart_16550 = "0.1.0"
 volatile = "0.2.3"
-x86_64 = "0.2.8"
+x86_64 = "0.3.5"
 
 [dependencies.lazy_static]
 version = "1.0"

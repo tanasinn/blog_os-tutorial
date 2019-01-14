@@ -2,11 +2,9 @@
 // for a Windows system.
 #![cfg(not(windows))]
 
-extern crate x86_64;
-
-use gdt;
-use hlt_loop;
+use crate::{gdt, print, println};
 use x86_64::structures::idt::{InterruptDescriptorTable, ExceptionStackFrame};
+use lazy_static::lazy_static;
 use pic8259_simple::ChainedPics;
 use spin;
 
@@ -41,6 +39,7 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFra
 }
 
 extern "x86-interrupt" fn double_fault_handler(stack_frame: &mut ExceptionStackFrame, _error_code: u64) {
+    use crate::hlt_loop;
     println!("\x1B[41;93mEXCEPTION: DOUBLE FAULT\n{:#?}\x1B[0m", stack_frame);
     hlt_loop();
 }

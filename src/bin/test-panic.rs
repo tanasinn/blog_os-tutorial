@@ -2,11 +2,8 @@
 #![cfg_attr(not(test), no_main)]
 #![cfg_attr(test, allow(dead_code, unused_macros, unused_imports))]
 
-#[macro_use]
-extern crate blog_os;
-
+use blog_os::{exit_qemu, serial_println};
 use core::panic::PanicInfo;
-use blog_os::exit_qemu;
 
 #[cfg(not(test))]
 #[panic_handler]

@@ -1,10 +1,9 @@
 #![no_std]
 #![cfg_attr(not(test), no_main)]
-#![cfg_attr(test, allow(dead_code, unused_macros, unused_imports))]
+#![cfg_attr(test, allow(unused_imports))]
 
-#[macro_use]
-extern crate blog_os;
-
+use blog_os::print;
+use blog_os::println;
 use core::panic::PanicInfo;
 
 #[cfg(not(test))]
