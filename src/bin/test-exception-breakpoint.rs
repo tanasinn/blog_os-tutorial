@@ -4,9 +4,9 @@
 #![cfg_attr(test, allow(dead_code, unused_macros, unused_imports))]
 
 use blog_os::{exit_qemu, serial_println};
-use lazy_static::lazy_static;
 use core::panic::PanicInfo;
 use core::sync::atomic::{AtomicUsize, Ordering};
+use lazy_static::lazy_static;
 
 static BREAKPOINT_HANDLER_CALLED: AtomicUsize = AtomicUsize::new(0);
 

@@ -29,7 +29,7 @@ macro_rules! println {
 }
 
 const BUFFER_HEIGHT: usize = 25;
-const BUFFER_WIDTH: usize  = 80;
+const BUFFER_WIDTH: usize = 80;
 const SGR_BUFFER_LENGTH: usize = 5;
 
 pub fn _print(args: fmt::Arguments) {
@@ -60,7 +60,7 @@ pub enum Color {
     LightRed   = 12,
     Pink       = 13,
     Yellow     = 14,
-    White      = 15
+    White      = 15,
 }
 
 impl Color {
@@ -82,7 +82,7 @@ impl Color {
             13 => Color::Pink,
             14 => Color::LightCyan,
             15 => Color::White,
-            _  => Color::Black
+            _  => Color::Black,
         }
     }
 }
@@ -108,23 +108,23 @@ impl ColorCode {
 #[repr(C)]
 struct ScreenChar {
     ascii_character: u8,
-    color_code: ColorCode
+    color_code     : ColorCode,
 }
 
 struct Buffer {
-    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT]
+    chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 #[derive(Debug, Clone, Copy)]
 struct CsiSeq {
     index: usize,
-    array: [u32; SGR_BUFFER_LENGTH]
+    array: [u32; SGR_BUFFER_LENGTH],
 }
 
 enum Mode {
     Normal,
     ESC,
-    CSI
+    CSI,
 }
 
 pub struct Writer {
@@ -133,7 +133,7 @@ pub struct Writer {
     color_code     : ColorCode,
     buffer         : &'static mut Buffer,
     mode           : Mode,
-    csi_sequence   : CsiSeq
+    csi_sequence   : CsiSeq,
 }
 
 impl Writer {
@@ -141,7 +141,7 @@ impl Writer {
         for byte in s.bytes() {
             match byte {
                 0x20...0x7e | b'\n' | b'\r' | 0x08 | 0x1b => self.write_byte(byte),
-                _ => self.write_byte(0xfe)
+                _ => self.write_byte(0xfe),
             }
         }
     }
@@ -150,26 +150,27 @@ impl Writer {
         match self.mode {
             Mode::ESC => {
                 self.parse_esc(byte);
-            },
+            }
             Mode::CSI => {
                 self.parse_csi(byte);
-            },
+            }
             Mode::Normal => {
                 match byte {
                     b'\n' => {
                         self.new_line();
                         self.mode = Mode::Normal
-                    },
+                    }
                     b'\r' => self.column_position = 0,
                     0x1b => {
                         self.mode = Mode::ESC;
-                    },
-                    0x08 => {  // backspace
+                    }
+                    0x08 => {
+                        // backspace
                         if self.column_position > 0 {
                             self.column_position -= 1
                         }
-                    },
-                    byte  => {
+                    }
+                    byte => {
                         if self.column_position >= BUFFER_WIDTH {
                             self.new_line();
                         }
@@ -180,7 +181,7 @@ impl Writer {
                         let color = self.color_code;
                         self.buffer.chars[row][col].write(ScreenChar {
                             ascii_character: byte,
-                            color_code     : color
+                            color_code     : color,
                         });
                         self.column_position += 1;
                     }
@@ -197,9 +198,9 @@ impl Writer {
                 self.mode = Mode::CSI;
                 self.csi_sequence = CsiSeq {
                     index: 0,
-                    array: [0; SGR_BUFFER_LENGTH]
+                    array: [0; SGR_BUFFER_LENGTH],
                 };
-            },
+            }
             _ => {
                 self.mode = Mode::Normal;
                 self.write_string("\x1B[37mESC");
@@ -213,13 +214,14 @@ impl Writer {
     /// See: https://en.wikipedia.org/wiki/ANSI_escape_code#CSI_sequences
     fn parse_csi(&mut self, byte: u8) {
         match byte {
-            b'm' => {   // SGR end
+            b'm' => {
+                // SGR end
                 self.parse_sgr();
                 self.mode = Mode::Normal;
-            },
+            }
             b';' => {
                 self.csi_sequence.index += 1;
-            },
+            }
             b'0'...b'9' => {
                 self.mode = Mode::CSI;
 
@@ -228,7 +230,7 @@ impl Writer {
                 if index < self.csi_sequence.array.len() {
                     self.csi_sequence.array[index] = self.csi_sequence.array[index] * 10 + value;
                 }
-            },
+            }
             _ => {
                 use core::fmt::Write;
 
@@ -236,7 +238,7 @@ impl Writer {
                 self.write_string("\x1B[37mESC[");
                 for i in 0..(self.csi_sequence.index + 1) {
                     let value = self.csi_sequence.array[i];
-                    write!(self, "{}{}", if i > 0 {";"} else {""}, value).unwrap();
+                    write!(self, "{}{}", if i > 0 { ";" } else { "" }, value).unwrap();
                 }
                 self.write_byte(byte);
                 self.write_string("\x1B[0m");
@@ -257,27 +259,27 @@ impl Writer {
                     let old_fg = self.color_code.0 & 0x0f;
                     let old_bg = self.color_code.0 >> 4;
                     self.color_code.0 = old_fg << 4 | old_bg;
-                },
+                }
                 // fg
                 30...37 => {
                     self.color_code.set_fg(Color::from_code(value - 30));
-                },
+                }
                 // default fg
                 39 => self.color_code.set_fg(Color::White),
                 // bg
                 40...47 => {
                     self.color_code.set_bg(Color::from_code(value - 40));
-                },
+                }
                 // default bg
                 49 => self.color_code.set_bg(Color::Black),
                 // fg - bright
                 90...97 => {
                     self.color_code.set_fg(Color::from_code(value - 90 + 8));
-                },
+                }
                 // bg - bright
                 100...107 => {
                     self.color_code.set_bg(Color::from_code(value - 100 + 8));
-                },
+                }
                 _ => {}
             }
         }
@@ -301,7 +303,7 @@ impl Writer {
     fn clear_row(&mut self, row: usize) {
         let blank = ScreenChar {
             ascii_character: b' ',
-            color_code     : self.color_code
+            color_code     : self.color_code,
         };
         for col in 0..BUFFER_WIDTH {
             self.buffer.chars[row][col].write(blank);
@@ -332,8 +334,8 @@ mod test {
             mode           : Mode::Normal,
             csi_sequence   : CsiSeq {
                 index: 0,
-                array: [0; SGR_BUFFER_LENGTH]
-            }
+                array: [0; SGR_BUFFER_LENGTH],
+            },
         }
     }
 
@@ -480,7 +482,14 @@ mod test {
             let bg_offset = if row < 8 { 40 } else { 100 - 8 };
             for col in 0..16 {
                 let fg_offset = if col < 8 { 30 } else { 90 - 8 };
-                write!(&mut writer, "\x1B[{};{}m{:X}", bg_offset + row, fg_offset + col, col).unwrap();
+                write!(
+                    &mut writer,
+                    "\x1B[{};{}m{:X}",
+                    bg_offset + row,
+                    fg_offset + col,
+                    col
+                )
+                .unwrap();
             }
             writeln!(&mut writer, "\x1B[0m").unwrap();
         }
@@ -489,12 +498,14 @@ mod test {
             for (j, screen_char) in row.iter().enumerate() {
                 let screen_char = screen_char.read();
                 if j < 16 && i < 16 {
-                    let expexted_char = if j < 10 { b'0' + j as u8 } else { b'A' + (j - 10) as u8 };
+                    let expexted_char = if j < 10 {
+                        b'0' + j as u8
+                    } else {
+                        b'A' + (j - 10) as u8
+                    };
                     assert_eq!(screen_char.ascii_character, expexted_char);
-                    let expexted_color = ColorCode::new(
-                        Color::from_code(j as u32),
-                        Color::from_code(i as u32)
-                    );
+                    let expexted_color =
+                        ColorCode::new(Color::from_code(j as u32), Color::from_code(i as u32));
                     assert_eq!(screen_char.color_code, expexted_color);
                 } else {
                     assert_eq!(screen_char.ascii_character, b' ');

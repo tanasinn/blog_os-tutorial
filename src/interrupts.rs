@@ -3,25 +3,27 @@
 #![cfg(not(windows))]
 
 use crate::{gdt, print, println};
-use x86_64::structures::idt::{InterruptDescriptorTable, ExceptionStackFrame, PageFaultErrorCode};
 use lazy_static::lazy_static;
 use pic8259_simple::ChainedPics;
 use spin;
+use x86_64::structures::idt::{ExceptionStackFrame, InterruptDescriptorTable, PageFaultErrorCode};
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
 
-pub const TIMER_INTERRUPT_ID: u8    = PIC_1_OFFSET;
+pub const TIMER_INTERRUPT_ID: u8 = PIC_1_OFFSET;
 pub const KEYBOARD_INTERRUPT_ID: u8 = PIC_1_OFFSET + 1;
 
-pub static PICS: spin::Mutex<ChainedPics> = spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
+pub static PICS: spin::Mutex<ChainedPics> =
+    spin::Mutex::new(unsafe { ChainedPics::new(PIC_1_OFFSET, PIC_2_OFFSET) });
 
 lazy_static! {
     static ref IDT: InterruptDescriptorTable = {
         let mut idt = InterruptDescriptorTable::new();
         idt.breakpoint.set_handler_fn(breakpoint_handler);
         unsafe {
-            idt.double_fault.set_handler_fn(double_fault_handler)
+            idt.double_fault
+                .set_handler_fn(double_fault_handler)
                 .set_stack_index(gdt::DOUBLE_FAULT_IST_INDEX);
         }
         idt[usize::from(TIMER_INTERRUPT_ID)].set_handler_fn(timer_interrupt_handler);
@@ -36,26 +38,35 @@ pub fn init_idt() {
 }
 
 extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFrame) {
-    println!("\x1B[41;97mEXCEPTION: BREAKPOINT\n{:#?}\x1B[0m", stack_frame);
+    println!(
+        "\x1B[41;97mEXCEPTION: BREAKPOINT\n{:#?}\x1B[0m",
+        stack_frame
+    );
 }
 
-extern "x86-interrupt" fn double_fault_handler(stack_frame: &mut ExceptionStackFrame, _error_code: u64) {
+extern "x86-interrupt" fn double_fault_handler(
+    stack_frame: &mut ExceptionStackFrame,
+    _error_code: u64,
+) {
     use crate::hlt_loop;
-    println!("\x1B[41;93mEXCEPTION: DOUBLE FAULT\n{:#?}\x1B[0m", stack_frame);
+    println!(
+        "\x1B[41;93mEXCEPTION: DOUBLE FAULT\n{:#?}\x1B[0m",
+        stack_frame
+    );
     hlt_loop();
 }
 
 extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: &mut ExceptionStackFrame) {
-//    print!(".");
+    //    print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(TIMER_INTERRUPT_ID);
     };
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: &mut ExceptionStackFrame) {
-    use x86_64::instructions::port::Port;
-    use pc_keyboard::{Keyboard, ScancodeSet1, DecodedKey, layouts};
+    use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1};
     use spin::Mutex;
+    use x86_64::instructions::port::Port;
 
     lazy_static! {
         static ref KEYBOARD: Mutex<Keyboard<layouts::Us104Key, ScancodeSet1>> =
@@ -70,7 +81,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: &mut Exceptio
         if let Some(key) = keyboard.process_keyevent(key_event) {
             match key {
                 DecodedKey::Unicode(character) => print!("{}", character),
-                DecodedKey::RawKey(key)        => print!("{:?}", key)
+                DecodedKey::RawKey(key) => print!("{:?}", key),
             }
         }
     }
@@ -80,9 +91,9 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: &mut Exceptio
     };
 }
 
-extern  "x86-interrupt" fn page_fault_handler(
+extern "x86-interrupt" fn page_fault_handler(
     stack_frame: &mut ExceptionStackFrame,
-    _error_frame: PageFaultErrorCode
+    _error_frame: PageFaultErrorCode,
 ) {
     use crate::hlt_loop;
     use x86_64::registers::control::Cr2;
