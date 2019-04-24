@@ -6,7 +6,7 @@ use crate::{gdt, print, println};
 use lazy_static::lazy_static;
 use pic8259_simple::ChainedPics;
 use spin;
-use x86_64::structures::idt::{ExceptionStackFrame, InterruptDescriptorTable, PageFaultErrorCode};
+use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -37,7 +37,7 @@ pub fn init_idt() {
     IDT.load();
 }
 
-extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut InterruptStackFrame) {
     println!(
         "\x1B[41;97mEXCEPTION: BREAKPOINT\n{:#?}\x1B[0m",
         stack_frame
@@ -45,7 +45,7 @@ extern "x86-interrupt" fn breakpoint_handler(stack_frame: &mut ExceptionStackFra
 }
 
 extern "x86-interrupt" fn double_fault_handler(
-    stack_frame: &mut ExceptionStackFrame,
+    stack_frame: &mut InterruptStackFrame,
     _error_code: u64,
 ) {
     use crate::hlt_loop;
@@ -56,14 +56,14 @@ extern "x86-interrupt" fn double_fault_handler(
     hlt_loop();
 }
 
-extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn timer_interrupt_handler(_stack_frame: &mut InterruptStackFrame) {
     //    print!(".");
     unsafe {
         PICS.lock().notify_end_of_interrupt(TIMER_INTERRUPT_ID);
     };
 }
 
-extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: &mut ExceptionStackFrame) {
+extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: &mut InterruptStackFrame) {
     use pc_keyboard::{layouts, DecodedKey, Keyboard, ScancodeSet1};
     use spin::Mutex;
     use x86_64::instructions::port::Port;
@@ -92,7 +92,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: &mut Exceptio
 }
 
 extern "x86-interrupt" fn page_fault_handler(
-    stack_frame: &mut ExceptionStackFrame,
+    stack_frame: &mut InterruptStackFrame,
     _error_frame: PageFaultErrorCode,
 ) {
     use crate::hlt_loop;

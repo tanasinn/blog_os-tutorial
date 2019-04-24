@@ -54,13 +54,19 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     //        *ptr = 42;
     //    }
 
-    use blog_os::memory::{self, create_example_mapping};
+    use blog_os::memory;
+    use x86_64::{structures::paging::Page, VirtAddr};
 
-    let mut recursive_page_table = unsafe { memory::init(boot_info.p4_table_addr as usize) };
+    let mut mapper = unsafe { memory::init(boot_info.physical_memory_offset) };
     let mut frame_allocator = memory::init_frame_allocator(&boot_info.memory_map);
 
-    create_example_mapping(&mut recursive_page_table, &mut frame_allocator);
-    unsafe { (0xdeadbeafc00 as *mut u64).write_volatile(0xf021f077f065f04e) };
+    // map a previously unmapped page
+    let page = Page::containing_address(VirtAddr::new(0xdeadbeaf000));
+    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+
+    // write the string `New` to the screen through the new mapping
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) };
 
     println!("It did not crash!");
 
