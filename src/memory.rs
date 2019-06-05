@@ -6,7 +6,7 @@ use x86_64::{PhysAddr, VirtAddr};
 /// A FrameAllocator that always returns `None`.
 pub struct EmptyFrameAllocator;
 
-impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
+unsafe impl FrameAllocator<Size4KiB> for EmptyFrameAllocator {
     fn allocate_frame(&mut self) -> Option<PhysFrame> {
         None
     }
@@ -19,7 +19,7 @@ where
     frames: I,
 }
 
-impl<I> FrameAllocator<Size4KiB> for BootInfoFrameAllocator<I>
+unsafe impl<I> FrameAllocator<Size4KiB> for BootInfoFrameAllocator<I>
 where
     I: Iterator<Item = PhysFrame>,
 {
