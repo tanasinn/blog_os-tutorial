@@ -140,7 +140,7 @@ impl Writer {
     pub fn write_string(&mut self, s: &str) {
         for byte in s.bytes() {
             match byte {
-                0x20...0x7e | b'\n' | b'\r' | 0x08 | 0x1b => self.write_byte(byte),
+                0x20..=0x7e | b'\n' | b'\r' | 0x08 | 0x1b => self.write_byte(byte),
                 _ => self.write_byte(0xfe),
             }
         }
@@ -222,7 +222,7 @@ impl Writer {
             b';' => {
                 self.csi_sequence.index += 1;
             }
-            b'0'...b'9' => {
+            b'0'..=b'9' => {
                 self.mode = Mode::CSI;
 
                 let value = (byte - b'0') as u32;
@@ -261,23 +261,23 @@ impl Writer {
                     self.color_code.0 = old_fg << 4 | old_bg;
                 }
                 // fg
-                30...37 => {
+                30..=37 => {
                     self.color_code.set_fg(Color::from_code(value - 30));
                 }
                 // default fg
                 39 => self.color_code.set_fg(Color::White),
                 // bg
-                40...47 => {
+                40..=47 => {
                     self.color_code.set_bg(Color::from_code(value - 40));
                 }
                 // default bg
                 49 => self.color_code.set_bg(Color::Black),
                 // fg - bright
-                90...97 => {
+                90..=97 => {
                     self.color_code.set_fg(Color::from_code(value - 90 + 8));
                 }
                 // bg - bright
-                100...107 => {
+                100..=107 => {
                     self.color_code.set_bg(Color::from_code(value - 100 + 8));
                 }
                 _ => {}
