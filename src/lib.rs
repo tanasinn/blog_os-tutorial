@@ -6,6 +6,7 @@
 #![feature(const_in_array_repeat_expressions)]
 #![feature(const_fn)]
 #![feature(custom_test_frameworks)]
+#![feature(wake_trait)]
 #![reexport_test_harness_main = "test_main"]
 #![test_runner(crate::test_runner)]
 
@@ -23,6 +24,7 @@ pub mod gdt;
 pub mod interrupts;
 pub mod memory;
 pub mod serial;
+pub mod task;
 pub mod vga_buffer;
 
 pub fn init() {
